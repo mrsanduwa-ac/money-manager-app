@@ -3,7 +3,7 @@
 
 const SPREADSHEET_ID = ""; // Leave empty to use the active spreadsheet if bound.
 const SHEET_NAME = "Transactions";
-const SECURE_PIN = "1234"; // PIN for sensitive actions
+const SECURE_PIN = "239535"; // PIN for sensitive actions
 
 function doGet(e) {
   const userId = e.parameter.userId;
