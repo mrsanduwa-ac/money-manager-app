@@ -1,0 +1,5 @@
+{
+  "name": "Money Manager Pro",
+  "description": "A comprehensive financial management system with analytics, loan tracking, and real-time Google Sheets synchronization.",
+  "requestFramePermissions": []
+}
