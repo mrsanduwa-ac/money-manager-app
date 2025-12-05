@@ -142,7 +142,7 @@ function App() {
     if (success) {
       setModalType(null);
       setFormData({});
-      setRefreshKey(prev => prev + 1);
+      setRefreshKey(prev => prev + 1); // Trigger Refresh
     } else {
       alert("Transaction Failed. Check connection.");
     }
@@ -159,7 +159,7 @@ function App() {
     const success = await api.updateTransaction(id, updates, pin);
     setLoading(false);
     if (success) {
-      setRefreshKey(prev => prev + 1);
+      setRefreshKey(prev => prev + 1); // Trigger Refresh immediately
     }
     return success;
   };
