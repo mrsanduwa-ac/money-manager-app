@@ -1,35 +1,489 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://pic.onlinewebfonts.com/thumbnails/icons_531636.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Money Manager Pro</title>
+    
+    <!-- 1. Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Recharts -->
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Babel (Compiles code in browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-      body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; touch-action: manipulation; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        .animate-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-        "react/": "https://aistudiocdn.com/react@^19.2.1/",
-        "react": "https://aistudiocdn.com/react@^19.2.1",
-        "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/"
-      }
-    }
-    </script>
-  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
+<body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+    <script type="text/babel">
+        // --- 1. CONFIGURATION ---
+        
+        // !!! PASTE YOUR GOOGLE APPS SCRIPT URL HERE !!!
+        const GAS_API_URL = 'YOUR_GAS_WEB_APP_URL_HERE'; 
+        
+        const USER_ID = 'money_manager_user';
+        const ACCOUNTS = ['Sampath Bank', 'Commercial Bank', 'HNB Bank', 'Peoples Bank', 'Dialog Finance', 'Solo', 'Wallet'];
+        const LOAN_ACCOUNTS = ['Peoples Bank Loan', 'Dialog Finance Loan'];
+        
+        const ACCOUNT_COLORS = {
+            'Sampath Bank': 'from-orange-500 to-orange-600',
+            'Commercial Bank': 'from-blue-500 to-blue-600',
+            'HNB Bank': 'from-yellow-500 to-yellow-600',
+            'Peoples Bank': 'from-red-500 to-red-600',
+            'Dialog Finance': 'from-red-700 to-red-800',
+            'Solo': 'from-purple-500 to-purple-600',
+            'Wallet': 'from-slate-700 to-slate-800',
+        };
+
+        // --- 2. GLOBAL SETUP ---
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } = window.Recharts;
+        
+        // Map Lucide icons from global object for easy usage
+        const { 
+            Wallet, Landmark, CreditCard, Plus, Minus, Smartphone, Wrench, 
+            History, RefreshCw, TrendingUp, TrendingDown, Edit2, X, ChevronRight 
+        } = lucide.icons;
+
+        // --- 3. API SERVICE ---
+        const api = {
+            fetchTransactions: async () => {
+                if(GAS_API_URL.includes('YOUR_GAS')) { 
+                    alert("Please update the GAS_API_URL in the HTML file!"); 
+                    return []; 
+                }
+                try {
+                    const res = await fetch(`${GAS_API_URL}?action=fetchData&userId=${USER_ID}`);
+                    const data = await res.json();
+                    return Array.isArray(data) ? data : [];
+                } catch(e) {
+                    console.error("Fetch Error", e);
+                    return [];
+                }
+            },
+            addTransaction: async (data) => {
+                const payload = {
+                    action: 'addTransaction',
+                    userId: USER_ID,
+                    data: { ...data, id: crypto.randomUUID(), date: new Date().toISOString() }
+                };
+                return await sendPost(payload);
+            },
+            updateTransaction: async (id, updates, pin) => {
+                const payload = {
+                    action: 'updateStatus',
+                    userId: USER_ID,
+                    transactionId: id,
+                    updates,
+                    pin
+                };
+                return await sendPost(payload);
+            }
+        };
+
+        async function sendPost(payload) {
+            try {
+                // Using no-cors mode primarily to avoid CORS errors if script isn't deployed correctly,
+                // BUT ideally you want a response. If GAS is set to "Anyone", standard fetch works.
+                const res = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                return json.success;
+            } catch (e) {
+                console.error("API Error", e);
+                // Fallback for no-cors blind send
+                return false;
+            }
+        }
+
+        // --- 4. UI COMPONENTS ---
+
+        // Generic Modal
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm animate-in">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
+                            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+                            <button onClick={onClose} className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                                <X size={20} className="text-gray-600"/>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto">{children}</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Balance Card (Merged Loan Logic & Red Color)
+        const BalanceCard = ({ name, balance, onClick }) => {
+            // Logic: If balance is negative, force Dark Red gradient.
+            const isNegative = balance < 0;
+            const bgClass = isNegative 
+                ? 'from-red-900 to-red-950' // Dark Red for Debt
+                : (ACCOUNT_COLORS[name] || 'from-gray-600 to-gray-700'); // Standard Color
+
+            let CardIcon = Landmark;
+            if (name === 'Wallet') CardIcon = Wallet;
+            if (name === 'Solo') CardIcon = CreditCard;
+
+            const formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'LKR', minimumFractionDigits: 2 }).format(balance);
+
+            return (
+                <div onClick={onClick} className={`relative flex-shrink-0 w-80 h-48 rounded-2xl p-6 text-white shadow-xl bg-gradient-to-br ${bgClass} cursor-pointer transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl mr-4 overflow-hidden`}>
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                    <div className="flex justify-between items-start z-10 relative">
+                        <div>
+                            <p className="text-xs font-medium opacity-80 uppercase tracking-wider">
+                                {isNegative ? 'Outstanding Liability' : 'Current Balance'}
+                            </p>
+                            <h3 className="text-2xl font-bold mt-1 tracking-tight">{formatted}</h3>
+                        </div>
+                        <CardIcon className="w-8 h-8 opacity-80" />
+                    </div>
+                    <div className="absolute bottom-6 left-6 z-10">
+                        <p className="text-xs font-medium opacity-70 uppercase">Account Name</p>
+                        <p className="text-lg font-semibold tracking-wide">{name}</p>
+                    </div>
+                    {/* Chip Image Simulation */}
+                    <div className="absolute bottom-6 right-6 z-10 w-10 h-8 bg-yellow-200 opacity-60 rounded flex items-center justify-center overflow-hidden">
+                        <div className="w-full h-[1px] bg-yellow-600 mb-[2px]"></div>
+                        <div className="w-full h-[1px] bg-yellow-600 mt-[2px]"></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Edit Transaction Modal
+        const EditModal = ({ transaction, isOpen, onClose, onUpdate, loading }) => {
+            const [pin, setPin] = useState('');
+            const [amount, setAmount] = useState('');
+            const [account, setAccount] = useState('');
+            const [error, setError] = useState('');
+
+            useEffect(() => {
+                if (transaction) {
+                    setAmount(transaction.amount);
+                    setAccount(transaction.bank_account || '');
+                    setPin('');
+                    setError('');
+                }
+            }, [transaction]);
+
+            const handleSubmit = async () => {
+                if (!pin) { setError('PIN is required'); return; }
+                const updates = { is_paid: true };
+                
+                if (transaction.type === 'repair') {
+                    const price = parseFloat(amount);
+                    if (isNaN(price) || price <= 0) { setError('Invalid price'); return; }
+                    if (!account) { setError('Select Account'); return; }
+                    updates.amount = price;
+                    updates.original_amount = price;
+                    updates.bank_account = account;
+                    updates.price_status = 'Added';
+                }
+
+                const success = await onUpdate(transaction.id, updates, pin);
+                if (success) onClose();
+                else setError('Incorrect PIN or Update Failed');
+            };
+
+            if (!transaction) return null;
+            const isRepair = transaction.type === 'repair';
+
+            return (
+                <Modal isOpen={isOpen} onClose={onClose} title={isRepair ? "Complete Repair Job" : "Mark as Paid"}>
+                    <div className="space-y-4">
+                        {isRepair ? (
+                            <>
+                                <div className="p-3 bg-blue-50 text-blue-800 rounded text-sm">Job: <strong>{transaction.customer_name}</strong> ({transaction.phone_name})</div>
+                                <Input label="Final Price (LKR)" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
+                                <Select label="Received To" options={ACCOUNTS} value={account} onChange={e => setAccount(e.target.value)} />
+                            </>
+                        ) : (
+                             <p className="text-gray-600 text-sm">Confirm marking this <strong>{transaction.type}</strong> as paid?</p>
+                        )}
+                        <div className="border-t pt-4 mt-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Security PIN</label>
+                            <input type="password" value={pin} onChange={e => {setPin(e.target.value); setError('')}} className="w-full border rounded-lg p-3 text-center text-xl tracking-[0.5em] focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••" />
+                            {error && <p className="text-red-500 text-xs mt-2 text-center font-bold bg-red-50 p-1 rounded">{error}</p>}
+                        </div>
+                        <button onClick={handleSubmit} disabled={loading} className="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold shadow-md hover:bg-emerald-700 disabled:opacity-50">
+                            {loading ? 'Verifying...' : 'Confirm Update'}
+                        </button>
+                    </div>
+                </Modal>
+            );
+        };
+
+        // UI Helpers
+        const Input = ({ label, ...props }) => (<div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{label}</label><input className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" {...props} /></div>);
+        const Select = ({ label, options, ...props }) => (<div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{label}</label><select className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" {...props}><option value="">Select Option</option>{options.map(o => <option key={o} value={o}>{o.replace(' Loan', '')}</option>)}</select></div>);
+        const ActionButton = ({ icon: Icon, label, color, onClick, className = '' }) => (<button onClick={onClick} className={`flex flex-col items-center justify-center p-4 rounded-2xl shadow-sm text-white transition-transform active:scale-95 ${color} ${className}`}><Icon className="w-6 h-6 mb-2" /><span className="text-sm font-semibold">{label}</span></button>);
+
+        // --- 5. MAIN APP COMPONENT ---
+        const App = () => {
+            const [transactions, setTransactions] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [modalType, setModalType] = useState(null);
+            const [selectedAccount, setSelectedAccount] = useState(null);
+            const [formData, setFormData] = useState({});
+            const [editTxn, setEditTxn] = useState(null);
+            const [refreshKey, setRefreshKey] = useState(0);
+
+            // Auto Scroll Logic
+            const scrollContainerRef = useRef(null);
+            const [isPaused, setIsPaused] = useState(false);
+
+            // Load Data
+            useEffect(() => {
+                const load = async () => {
+                    setLoading(true);
+                    const data = await api.fetchTransactions();
+                    setTransactions(data.sort((a,b) => new Date(b.date) - new Date(a.date)));
+                    setLoading(false);
+                };
+                load();
+            }, [refreshKey]);
+
+            // Auto Scroll Effect
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    if (scrollContainerRef.current && !isPaused) {
+                        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+                        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                             scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                        } else {
+                             scrollContainerRef.current.scrollBy({ left: 340, behavior: 'smooth' });
+                        }
+                    }
+                }, 3000);
+                return () => clearInterval(interval);
+            }, [isPaused]);
+
+            // Calculations
+            const balances = useMemo(() => {
+                const bal = {};
+                ACCOUNTS.forEach(a => bal[a] = 0);
+                
+                transactions.forEach(t => {
+                    if (!t.bank_account) return;
+                    // Merge Loan Accounts into Main Accounts
+                    const baseName = t.bank_account.replace(' Loan', '');
+                    if (!bal.hasOwnProperty(baseName)) return;
+
+                    const val = parseFloat(t.amount) || 0;
+                    
+                    if (t.type === 'deposit') { bal[baseName] += val; } 
+                    else if (t.type === 'withdrawal' || t.type === 'reload') { bal[baseName] -= val; } // Reload reduces balance even if not paid
+                    else if (t.type === 'repair' && t.price_status === 'Added' && t.is_paid) { bal[baseName] += val; }
+                    else if (t.type === 'loan_acquisition') { bal[baseName] -= val; } // Creates negative balance
+                });
+                return bal;
+            }, [transactions]);
+
+            const stats = useMemo(() => {
+                const now = new Date();
+                let inc = 0, exp = 0;
+                transactions.forEach(t => {
+                    const d = new Date(t.date);
+                    const val = parseFloat(t.amount) || 0;
+                    if(d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+                        const isLoanFund = t.reason === 'Loan Funds Received';
+                        // Income: Deposits (excluding loan money) + Paid Repairs
+                        if ((t.type === 'deposit' && !isLoanFund) || (t.type === 'repair' && t.is_paid)) inc += val;
+                        // Expense: Withdrawals + Reloads (Paid or Unpaid, money left bank)
+                        if (t.type === 'withdrawal' || t.type === 'reload') exp += val;
+                    }
+                });
+                return { inc, exp, net: inc - exp };
+            }, [transactions]);
+
+            // Handlers
+            const handleInput = (e) => setFormData({...formData, [e.target.name]: e.target.value});
+            const handleSubmit = async () => {
+                setLoading(true);
+                let success = false;
+                const amt = parseFloat(formData.amount || 0);
+                const base = { ...formData, amount: amt };
+
+                if (modalType === 'deposit') success = await api.addTransaction({ ...base, type: 'deposit', is_paid: true });
+                else if (modalType === 'withdraw') success = await api.addTransaction({ ...base, type: 'withdrawal', is_paid: true });
+                else if (modalType === 'reload') success = await api.addTransaction({ ...base, type: 'reload', is_paid: formData.is_paid === 'true', date: formData.date || new Date().toISOString() });
+                else if (modalType === 'repair') success = await api.addTransaction({ ...base, type: 'repair', is_paid: false, price_status: amt > 0 ? 'Added' : 'Pending', original_amount: amt });
+                else if (modalType === 'loan') {
+                    // Loan creates liability (negative balance)
+                    const s1 = await api.addTransaction({ type: 'loan_acquisition', amount: amt, bank_account: formData.loan_account, reason: 'Loan Taken: ' + formData.reason, is_paid: true });
+                    // Money enters bank (asset)
+                    if(s1) success = await api.addTransaction({ type: 'deposit', amount: amt, bank_account: formData.bank_account, reason: 'Loan Funds Received', is_paid: true });
+                }
+
+                if (success) { setModalType(null); setFormData({}); setRefreshKey(k => k + 1); }
+                else alert('Error saving transaction');
+                setLoading(false);
+            };
+
+            const chartData = [{ name: 'Income', val: stats.inc, fill: '#10B981' }, { name: 'Expense', val: stats.exp, fill: '#EF4444' }];
+            const formatMoney = (v) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(v);
+
+            return (
+                <div className="min-h-screen pb-20 md:pb-10 bg-slate-50">
+                    {/* Header */}
+                    <div className="bg-white shadow sticky top-0 z-40 px-4 h-16 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <div className="bg-blue-600 p-2 rounded-lg text-white"><Wallet size={20} /></div>
+                            <h1 className="text-xl font-bold text-gray-800">Money Manager</h1>
+                        </div>
+                        <button onClick={() => setRefreshKey(k => k+1)} className="p-2 text-gray-500 bg-gray-100 rounded-full hover:bg-gray-200 hover:text-blue-600 transition">
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+                        
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                <div><p className="text-xs font-bold text-gray-400 uppercase">Monthly Income</p><h2 className="text-2xl font-bold text-emerald-600">{formatMoney(stats.inc)}</h2></div>
+                                <div className="bg-emerald-100 p-3 rounded-full text-emerald-600"><TrendingUp size={24} /></div>
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                <div><p className="text-xs font-bold text-gray-400 uppercase">Monthly Expense</p><h2 className="text-2xl font-bold text-red-600">{formatMoney(stats.exp)}</h2></div>
+                                <div className="bg-red-100 p-3 rounded-full text-red-600"><TrendingDown size={24} /></div>
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                <div><p className="text-xs font-bold text-gray-400 uppercase">Net Savings</p><h2 className={`text-2xl font-bold ${stats.net>=0?'text-blue-600':'text-orange-500'}`}>{formatMoney(stats.net)}</h2></div>
+                                <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Wallet size={24} /></div>
+                            </div>
+                        </div>
+
+                        {/* Action Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <ActionButton icon={Plus} label="Deposit" color="bg-emerald-500" onClick={() => setModalType('deposit')} />
+                            <ActionButton icon={Minus} label="Withdraw" color="bg-red-500" onClick={() => setModalType('withdraw')} />
+                            <ActionButton icon={Smartphone} label="Reload" color="bg-blue-500" onClick={() => setModalType('reload')} />
+                            <ActionButton icon={Wrench} label="Repair" color="bg-amber-500" onClick={() => setModalType('repair')} />
+                            <ActionButton icon={History} label="Loan" color="bg-purple-600" onClick={() => setModalType('loan')} className="col-span-2 md:col-span-1" />
+                        </div>
+
+                        {/* Balance Cards Carousel */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-bold text-gray-700">My Accounts</h3>
+                            </div>
+                            <div 
+                                ref={scrollContainerRef}
+                                className="flex overflow-x-auto pb-6 -mx-4 px-4 custom-scrollbar space-x-0 snap-x"
+                                onMouseEnter={() => setIsPaused(true)}
+                                onMouseLeave={() => setIsPaused(false)}
+                                onTouchStart={() => setIsPaused(true)}
+                                onTouchEnd={() => setIsPaused(false)}
+                            >
+                                {ACCOUNTS.map(acc => (
+                                    <div key={acc} className="snap-center">
+                                        <BalanceCard name={acc} balance={balances[acc]} onClick={() => setSelectedAccount(acc)} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Charts */}
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 h-64">
+                            <h3 className="font-bold text-gray-700 mb-4 text-sm">Financial Overview</h3>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}><XAxis dataKey="name" axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="val" radius={[8, 8, 0, 0]}>{chartData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar></BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Transactions List */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                                <h3 className="font-bold text-gray-800">Transactions {selectedAccount ? `(${selectedAccount})` : ''}</h3>
+                                {selectedAccount && <button onClick={() => setSelectedAccount(null)} className="text-xs font-bold text-blue-600 uppercase">Clear Filter</button>}
+                            </div>
+                            <div className="divide-y max-h-[500px] overflow-y-auto">
+                                {transactions.filter(t => !selectedAccount || (t.bank_account && t.bank_account.replace(' Loan', '') === selectedAccount)).slice(0, 40).map(t => (
+                                    <div key={t.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition">
+                                        <div className="flex items-center space-x-3">
+                                            <div className={`p-2 rounded-full ${t.is_paid ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                {t.type === 'repair' ? <Wrench size={18}/> : t.type === 'reload' ? <Smartphone size={18}/> : t.type === 'deposit' ? <TrendingUp size={18}/> : <TrendingDown size={18}/>}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-800 text-sm line-clamp-1">{t.customer_name || t.reason || t.type}</p>
+                                                <p className="text-xs text-gray-400">{new Date(t.date).toLocaleDateString()} • {t.bank_account}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right flex flex-col items-end">
+                                            <p className={`font-bold ${t.is_paid ? 'text-emerald-600' : 'text-gray-800'}`}>
+                                                {['withdrawal','reload'].includes(t.type) ? '-' : '+'} {parseFloat(t.amount).toLocaleString()}
+                                            </p>
+                                            {!t.is_paid ? (
+                                                <button onClick={() => setEditTxn(t)} className="flex items-center space-x-1 text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded border border-red-200 mt-1 uppercase font-bold hover:bg-red-100">
+                                                    <span>{t.type === 'repair' ? 'Update Price' : 'Pay'}</span>
+                                                    <Edit2 size={10} />
+                                                </button>
+                                            ) : (
+                                                <span className="text-[10px] text-green-600 bg-green-50 px-2 rounded mt-1 font-medium">Completed</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {transactions.length === 0 && <p className="p-8 text-center text-gray-400">No transactions found</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Modals */}
+                    <Modal isOpen={modalType==='deposit'} onClose={()=>setModalType(null)} title="Deposit Funds"><div className="space-y-4"><Input name="amount" label="Amount" type="number" onChange={handleInput} /><Input name="reason" label="Reason" onChange={handleInput} /><Select name="bank_account" label="Deposit To" options={[...ACCOUNTS, ...LOAN_ACCOUNTS]} onChange={handleInput} /><button onClick={handleSubmit} disabled={loading} className="w-full bg-emerald-600 text-white p-3 rounded-lg font-bold shadow hover:bg-emerald-700">Save</button></div></Modal>
+                    <Modal isOpen={modalType==='withdraw'} onClose={()=>setModalType(null)} title="Withdraw Cash"><div className="space-y-4"><Input name="amount" label="Amount" type="number" onChange={handleInput} /><Input name="reason" label="Reason" onChange={handleInput} /><Select name="bank_account" label="Withdraw From" options={ACCOUNTS} onChange={handleInput} /><button onClick={handleSubmit} disabled={loading} className="w-full bg-red-600 text-white p-3 rounded-lg font-bold shadow hover:bg-red-700">Withdraw</button></div></Modal>
+                    <Modal isOpen={modalType==='reload'} onClose={()=>setModalType(null)} title="Reload / Bill"><div className="space-y-4"><Input name="customer_name" label="Customer Name" onChange={handleInput} /><Input name="amount" label="Amount" type="number" onChange={handleInput} /><Input name="date" label="Date" type="date" defaultValue={new Date().toISOString().split('T')[0]} onChange={handleInput} /><Select name="bank_account" label="Deduct From" options={ACCOUNTS} onChange={handleInput} /><div className="flex items-center text-sm text-gray-700"><input type="checkbox" name="is_paid" value="true" onChange={handleInput} className="mr-2 w-4 h-4" /> Mark as Paid?</div><button onClick={handleSubmit} disabled={loading} className="w-full bg-blue-600 text-white p-3 rounded-lg font-bold shadow hover:bg-blue-700">Process</button></div></Modal>
+                    <Modal isOpen={modalType==='repair'} onClose={()=>setModalType(null)} title="New Repair Job"><div className="space-y-4"><Input name="customer_name" label="Customer Name" onChange={handleInput} /><Input name="phone_name" label="Device" onChange={handleInput} /><Input name="fault" label="Fault" onChange={handleInput} /><Input name="amount" label="Estimated Price (0 if Pending)" type="number" onChange={handleInput} /><Select name="bank_account" label="Account (Optional)" options={['', ...ACCOUNTS]} onChange={handleInput} /><button onClick={handleSubmit} disabled={loading} className="w-full bg-amber-600 text-white p-3 rounded-lg font-bold shadow hover:bg-amber-700">Create Job</button></div></Modal>
+                    <Modal isOpen={modalType==='loan'} onClose={()=>setModalType(null)} title="New Loan"><div className="space-y-4"><Select name="loan_account" label="Loan Provider" options={LOAN_ACCOUNTS} onChange={handleInput} /><Input name="amount" label="Loan Amount" type="number" onChange={handleInput} /><Select name="bank_account" label="Deposit Funds To" options={ACCOUNTS} onChange={handleInput} /><Input name="reason" label="Purpose" onChange={handleInput} /><button onClick={handleSubmit} disabled={loading} className="w-full bg-purple-600 text-white p-3 rounded-lg font-bold shadow hover:bg-purple-700">Record Loan</button></div></Modal>
+                    
+                    <EditModal transaction={editTxn} isOpen={!!editTxn} onClose={()=>setEditTxn(null)} onUpdate={api.updateTransaction} loading={loading} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
