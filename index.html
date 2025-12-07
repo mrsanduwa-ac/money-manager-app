@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Money Manager Pro</title>
+    <!-- 👉 CHANGE HERE: Browser Title -->
+    <title>Sanduwa Money Manager</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS & Config -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -20,21 +21,20 @@
                         'slide-in-right': 'slideInRight 0.3s ease-out forwards',
                         'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
                         'pulse-slow': 'pulse 3s infinite',
+                        'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both', // Shake Animation
                     },
                     keyframes: {
-                        fadeInUp: {
-                            '0%': { transform: 'translateY(20px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        },
-                        popIn: {
-                            '0%': { transform: 'scale(0.9)', opacity: '0' },
-                            '100%': { transform: 'scale(1)', opacity: '1' },
-                        },
-                        slideInRight: {
-                            '0%': { transform: 'translateX(100%)', opacity: '0' },
-                            '100%': { transform: 'translateX(0)', opacity: '1' },
+                        fadeInUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        popIn: { '0%': { transform: 'scale(0.9)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+                        slideInRight: { '0%': { transform: 'translateX(100%)', opacity: '0' }, '100%': { transform: 'translateX(0)', opacity: '1' } },
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
                         }
-                    }
+                    },
+                    colors: { error: '#ef4444', success: '#10b981' }
                 }
             }
         }
@@ -52,57 +52,36 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         .card-shadow { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
-        .card-chip {
-            width: 45px; height: 36px;
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-            border-radius: 6px; position: relative; overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .card-chip::before {
-            content: ''; position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px;
-            border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 3px;
-        }
-        .card-chip::after {
-            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 60%; height: 2px; background: rgba(0, 0, 0, 0.1);
-        }
         
-        .face-id-scanner {
-            position: relative; width: 60px; height: 60px;
-            border: 2px solid #3b82f6; border-radius: 16px;
-            overflow: hidden; margin: 0 auto;
-        }
-        .face-id-scanner::after {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: #3b82f6; box-shadow: 0 0 10px #3b82f6;
-            animation: scan 1.5s ease-in-out infinite;
-        }
-        @keyframes scan { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(60px); opacity: 1; } }
-
-        .pin-dot { width: 12px; height: 12px; border-radius: 50%; transition: all 0.2s; }
-        .pin-dot.empty { border: 1px solid #cbd5e1; }
-        .pin-dot.filled { background: #1e293b; transform: scale(1.1); }
+        .card-chip { width: 45px; height: 36px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border-radius: 6px; position: relative; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .card-chip::before { content: ''; position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 3px; }
+        .card-chip::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 2px; background: rgba(0, 0, 0, 0.1); }
+        
+        .pin-dot { width: 14px; height: 14px; border-radius: 50%; transition: all 0.2s; }
+        .pin-dot.empty { border: 2px solid #cbd5e1; background: transparent; }
+        .pin-dot.filled { background: #3b82f6; border: 2px solid #3b82f6; transform: scale(1.1); }
+        
+        /* Error State for PIN */
+        .error-shake .pin-dot.filled { background: #ef4444; border-color: #ef4444; }
+        .error-shake .pin-dot.empty { border-color: #ef4444; }
+        
+        .filter-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+        .filter-dot:active { transform: scale(0.8); }
+        .filter-dot.active { ring: 2px solid #cbd5e1; transform: scale(1.2); }
     </style>
 </head>
 <body class="text-slate-800 bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
-        // ================================================
-        // MONEY MANAGER PRO - CUSTOM LOGO EDITION
-        // ================================================
-        
+        // >>>>>>> ඔබේ URL එක මෙතනට දමන්න <<<<<<<
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbylu6VnMOFJSOt7JGGUnDTQxUXBP2Oc55eUy_9KAQouMX6LlVo4xddbphAEjBsDorOwog/exec';
+        
         const USER_ID = 'money_manager_user';
         
+        // 👉 CHANGE HERE: Account Names
         const ACCOUNTS = ['Sampath Bank', 'Commercial Bank', 'HNB Bank', 'Peoples Bank', 'Dialog Finance', 'Solo', 'Wallet'];
         const LOAN_ACCOUNTS = ['Peoples Bank Loan', 'Dialog Finance Loan'];
 
@@ -116,8 +95,6 @@
             return <IconComp className={className} size={size} {...props} />;
         };
 
-        // --- COMPONENTS ---
-
         const SyncIndicator = ({ isSyncing }) => {
             if (!isSyncing) return null;
             return (
@@ -127,41 +104,132 @@
                             <Icon name="RefreshCw" className="animate-spin text-blue-600" size={20} />
                             <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-700">Syncing...</span>
-                        </div>
+                        <div className="flex flex-col"><span className="text-xs font-bold text-slate-700">Syncing...</span></div>
                     </div>
                 </div>
             );
         };
 
-        // --- FULL PAGE LOADER WITH CUSTOM LOGO ---
         const FullPageLoader = () => (
-            <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center">
-                
-                {/* >>>>>>>> 1. මෙතනට ඔබේ LOGO එක දාන්න (Dlogo.png) <<<<<<<< */}
+            <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col items-center justify-center animate-fade-in-up">
                 <div className="w-24 h-24 mb-6 relative">
-                    <img 
-                        src="Dlogo.png" 
-                        alt="App Logo" 
-                        className="w-full h-full object-contain animate-pulse" 
-                        onError={(e) => { e.target.onerror = null; e.target.src = "https://cdn-icons-png.flaticon.com/512/2830/2830289.png"; }} 
-                    />
+                    <img src="Dlogo.png" alt="App Logo" className="w-full h-full object-contain animate-pulse" 
+                        onError={(e) => { e.target.onerror = null; e.target.src = "https://cdn-icons-png.flaticon.com/512/2830/2830289.png"; }} />
                 </div>
-                
-                {/* >>>>>>>> 2. Loading Screen එකේ නම මෙතනින් වෙනස් කරන්න <<<<<<<< */}
-                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                    Sanduwa<span className="text-blue-600">MoneyManager</span>
-                </h2>
-                
+                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Sanduwa<span className="text-blue-600">MoneyManager</span></h2>
                 <p className="text-xs text-slate-400 font-medium mt-2 animate-pulse">Establishing Secure Connection...</p>
             </div>
         );
 
+        // --- SECURE LOGIN SCREEN (With Auto Clear) ---
+        const LoginScreen = ({ onLoginSuccess }) => {
+            const [pin, setPin] = useState('');
+            const [status, setStatus] = useState('idle'); // idle, checking, error, success
+            const [isBioEnabled, setIsBioEnabled] = useState(false);
+
+            useEffect(() => {
+                const bio = localStorage.getItem('biometric_enabled') === 'true';
+                setIsBioEnabled(bio);
+            }, []);
+
+            // Keyboard support
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (status === 'checking' || status === 'error') return;
+                    if (e.key >= '0' && e.key <= '9') { if (pin.length < 4) setPin(prev => prev + e.key); }
+                    if (e.key === 'Backspace') setPin(prev => prev.slice(0, -1));
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [pin, status]);
+
+            // Auto verify when 4 digits entered
+            useEffect(() => {
+                if (pin.length === 4) verifyPin(pin);
+            }, [pin]);
+
+            const verifyPin = async (inputPin) => {
+                setStatus('checking');
+                try {
+                    const response = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'login', pin: inputPin })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        setStatus('success');
+                        setTimeout(() => onLoginSuccess(), 800);
+                    } else {
+                        throw new Error("Wrong PIN");
+                    }
+                } catch (error) {
+                    setStatus('error');
+                    // AUTO CLEAR: Wait for shake animation (500ms), then clear
+                    setTimeout(() => {
+                        setPin('');
+                        setStatus('idle');
+                    }, 500);
+                }
+            };
+
+            const handleNum = (n) => { if (pin.length < 4 && status !== 'error') setPin(pin + n); };
+
+            const handleBiometric = () => {
+                setStatus('checking');
+                setTimeout(() => {
+                    setStatus('success');
+                    setTimeout(() => onLoginSuccess(), 800);
+                }, 1000);
+            };
+
+            const enableBiometric = () => {
+                localStorage.setItem('biometric_enabled', 'true');
+                setIsBioEnabled(true);
+                alert("Biometric Login Enabled!");
+            };
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6">
+                    <div className={`w-20 h-20 mb-6 transition-all duration-500 ${status === 'success' ? 'scale-110 opacity-0' : 'scale-100'}`}>
+                        <img src="Dlogo.png" className="w-full h-full object-contain" onError={(e) => { e.target.onerror = null; e.target.src = "https://cdn-icons-png.flaticon.com/512/2830/2830289.png"; }} />
+                    </div>
+                    
+                    <h2 className={`text-xl font-bold text-slate-800 mb-8 transition-opacity ${status === 'success' ? 'opacity-0' : 'opacity-100'}`}>
+                        {status === 'checking' ? 'Verifying...' : 'Welcome Back'}
+                    </h2>
+                    
+                    <div className={`flex justify-center gap-4 mb-10 transition-all ${status === 'error' ? 'animate-shake error-shake' : ''}`}>
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className={`pin-dot ${i < pin.length ? 'filled' : 'empty'}`}></div>
+                        ))}
+                    </div>
+
+                    <div className={`grid grid-cols-3 gap-6 mb-8 transition-opacity duration-300 ${status === 'success' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                        {[1,2,3,4,5,6,7,8,9].map(n => (
+                            <button key={n} onClick={() => handleNum(n)} className="w-16 h-16 rounded-full bg-white shadow-sm border border-slate-200 text-2xl font-bold text-slate-700 active:scale-95 transition-all hover:bg-slate-50">{n}</button>
+                        ))}
+                        <div className="flex items-center justify-center">
+                            {isBioEnabled && (
+                                <button onClick={handleBiometric} className="text-blue-600 p-3 rounded-full hover:bg-blue-50 transition-colors">
+                                    <Icon name={status === 'checking' ? "Loader2" : "Fingerprint"} className={status === 'checking' ? "animate-spin" : ""} size={32} />
+                                </button>
+                            )}
+                        </div>
+                        <button onClick={() => handleNum(0)} className="w-16 h-16 rounded-full bg-white shadow-sm border border-slate-200 text-2xl font-bold text-slate-700 active:scale-95 transition-all">0</button>
+                        <button onClick={() => setPin(p => p.slice(0,-1))} className="flex items-center justify-center w-16 h-16 text-slate-400 active:scale-95 hover:text-slate-600"><Icon name="Delete" size={24} /></button>
+                    </div>
+
+                    {!isBioEnabled && status !== 'success' && (
+                        <button onClick={enableBiometric} className="text-xs text-blue-600 font-bold mt-4 opacity-80 hover:opacity-100">Enable Biometric Login</button>
+                    )}
+                </div>
+            );
+        };
+
         const BalanceCard = ({ account, balance, onClick, isActive }) => {
             const isLoan = account.includes('Loan');
             const baseName = account.replace(' Loan', '').replace(' Bank', '');
-            
             const getCardStyle = (name) => {
                 if(name.includes('Sampath')) return 'linear-gradient(135deg, #f57f17 0%, #e65100 100%)';
                 if(name.includes('Commercial')) return 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)';
@@ -171,43 +239,12 @@
                 if(name.includes('Solo')) return 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)';
                 return 'linear-gradient(135deg, #263238 0%, #37474f 100%)';
             };
-
             return (
-                <div onClick={onClick} 
-                     className={`
-                        relative w-[340px] h-[214px] rounded-2xl p-6 text-white card-shadow transition-all duration-300 transform shrink-0 snap-center
-                        overflow-hidden cursor-pointer flex flex-col justify-between
-                        ${isActive ? 'scale-105 z-10' : 'hover:translate-y-[-5px]'}
-                     `}
-                     style={{ background: getCardStyle(baseName) }}
-                >
+                <div onClick={onClick} className={`relative w-[340px] h-[214px] rounded-2xl p-6 text-white card-shadow transition-all duration-300 transform shrink-0 snap-center overflow-hidden cursor-pointer flex flex-col justify-between ${isActive ? 'scale-105 z-10' : 'hover:translate-y-[-5px]'}`} style={{ background: getCardStyle(baseName) }}>
                     <svg className="card-artwork" style={{position:'absolute', top:'-40px', right:'-40px', width:'200px', opacity:'0.15'}} viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="80" stroke="white" strokeWidth="2" /><circle cx="100" cy="100" r="60" stroke="white" strokeWidth="2" /></svg>
-                    
-                    <div className="flex justify-between items-start z-10">
-                        <div className="font-bold text-lg uppercase tracking-wider">{baseName} {isLoan && "Loan"}</div>
-                        <div className="flex gap-1.5">
-                            <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center"><div className="w-5 h-5 rounded-full bg-red-500/90"></div></div>
-                            <div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center -ml-4"><div className="w-5 h-5 rounded-full bg-yellow-500/90"></div></div>
-                        </div>
-                    </div>
-
-                    <div className="relative z-10 mt-2">
-                        <div className="card-chip"></div>
-                        <div className="mt-3">
-                            <div className="text-[10px] uppercase tracking-widest opacity-75 mb-1">{balance < 0 ? 'Outstanding' : 'Current Balance'}</div>
-                            <div className="text-3xl font-bold tracking-wide drop-shadow-md">
-                                {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(Math.abs(balance))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between items-end z-10">
-                        <div>
-                            <div className="text-[9px] uppercase tracking-widest opacity-70 mb-1">Card Number</div>
-                            <div className="text-sm font-semibold tracking-widest font-mono">**** **** **** 4288</div>
-                        </div>
-                        <Icon name="Nfc" className="opacity-80 rotate-90" />
-                    </div>
+                    <div className="flex justify-between items-start z-10"><div className="font-bold text-lg uppercase tracking-wider">{baseName} {isLoan && "Loan"}</div><div className="flex gap-1.5"><div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center"><div className="w-5 h-5 rounded-full bg-red-500/90"></div></div><div className="w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center -ml-4"><div className="w-5 h-5 rounded-full bg-yellow-500/90"></div></div></div></div>
+                    <div className="relative z-10 mt-2"><div className="card-chip"></div><div className="mt-3"><div className="text-[10px] uppercase tracking-widest opacity-75 mb-1">{balance < 0 ? 'Outstanding' : 'Current Balance'}</div><div className="text-3xl font-bold tracking-wide drop-shadow-md">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(Math.abs(balance))}</div></div></div>
+                    <div className="flex justify-between items-end z-10"><div><div className="text-[9px] uppercase tracking-widest opacity-70 mb-1">Card Number</div><div className="text-sm font-semibold tracking-widest font-mono">**** **** **** 4288</div></div><Icon name="Nfc" className="opacity-80 rotate-90" /></div>
                 </div>
             );
         };
@@ -216,28 +253,21 @@
             const isPaid = t.is_paid === true || t.is_paid === 'true';
             let icon = 'Banknote', color = 'text-slate-600', bg = 'bg-slate-100', sign = '';
             
+            const hidePayButton = t.type === 'deposit' || t.type === 'withdrawal' || t.type === 'loan_acquisition';
+            
             if (t.type === 'deposit') { icon = 'ArrowDownLeft'; color = 'text-emerald-600'; bg = 'bg-emerald-100'; sign = '+'; }
             else if (t.type === 'withdrawal') { icon = 'ArrowUpRight'; color = 'text-rose-600'; bg = 'bg-rose-100'; sign = '-'; }
             else if (t.type === 'reload') { icon = 'Smartphone'; color = 'text-blue-600'; bg = 'bg-blue-100'; sign = '-'; }
             else if (t.type === 'repair') { icon = 'Wrench'; color = 'text-amber-600'; bg = 'bg-amber-100'; sign = t.price_status === 'Added' ? '+' : ''; }
+            else if (t.type === 'loan_acquisition') { icon = 'History'; color = 'text-purple-600'; bg = 'bg-purple-100'; sign = '-'; }
 
             return (
-                <div onClick={() => !isPaid && onPay(t)} className={`flex items-center justify-between p-4 rounded-xl mb-2 transition-all ${!isPaid ? 'bg-white hover:bg-slate-50 cursor-pointer border border-slate-100' : 'bg-transparent border-b border-slate-50'}`}>
+                <div onClick={() => !isPaid && !hidePayButton && onPay(t)} className={`flex items-center justify-between p-4 rounded-xl mb-2 transition-all ${!isPaid && !hidePayButton ? 'bg-white hover:bg-slate-50 cursor-pointer border border-slate-100' : 'bg-transparent border-b border-slate-50'}`}>
                     <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl ${bg} ${color}`}>
-                            <Icon name={icon} size={20} />
-                        </div>
-                        <div>
-                            <p className="font-bold text-slate-800 text-sm">{t.customer_name || t.reason || t.type}</p>
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                {new Date(t.date).toLocaleDateString()} • {t.bank_account?.replace(' Bank','')}
-                            </p>
-                        </div>
+                        <div className={`p-3 rounded-xl ${bg} ${color}`}><Icon name={icon} size={20} /></div>
+                        <div><p className="font-bold text-slate-800 text-sm">{t.customer_name || t.reason || t.type}</p><p className="text-xs text-slate-500 font-medium mt-0.5">{new Date(t.date).toLocaleDateString()} • {t.bank_account?.replace(' Bank','')} • <span className="uppercase text-[10px]">{t.type}</span></p></div>
                     </div>
-                    <div className="text-right">
-                        <p className={`font-bold font-mono ${color} text-base`}>{sign}{parseFloat(t.amount).toLocaleString()}</p>
-                        {!isPaid && <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">PAY NOW</span>}
-                    </div>
+                    <div className="text-right"><p className={`font-bold font-mono ${color} text-base`}>{sign}{parseFloat(t.amount).toLocaleString()}</p>{!isPaid && !hidePayButton && <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">PAY NOW</span>}</div>
                 </div>
             );
         };
@@ -247,9 +277,7 @@
             const today = new Date().toISOString().split('T')[0];
             const [date, setDate] = useState(today);
             const [isPaid, setIsPaid] = useState(false);
-
             useEffect(() => { setDate(today); setIsPaid(false); }, [activeModal]);
-
             const handleSubmit = (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
@@ -261,195 +289,232 @@
                 if (activeModal === 'loan') { data.type = 'loan_acquisition'; data.is_paid = true; }
                 onSubmit(data);
             };
-
             const titles = { deposit: 'Deposit Funds', withdraw: 'Withdraw Cash', reload: 'Mobile Reload', repair: 'New Repair Job', loan: 'Get Loan' };
 
             return (
                 <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center">
                     <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-pop-in relative">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">
-                                {titles[activeModal]}
-                            </h3>
-                            <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><Icon name="X" size={20} className="text-slate-500" /></button>
-                        </div>
+                        <div className="flex justify-between items-center mb-6"><h3 className="font-bold text-xl text-slate-800 flex items-center gap-2">{titles[activeModal]}</h3><button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><Icon name="X" size={20} className="text-slate-500" /></button></div>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            {activeModal === 'deposit' && (
-                                <><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label><input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00" autoFocus required /></div><input name="reason" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Reason (e.g. Salary)" required /><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Deposit To</label><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required><option value="">Select Account</option>{ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></div></>
-                            )}
-                            {activeModal === 'reload' && (
-                                <><input name="customer_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Customer Name / Number" required autoFocus /><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label><input name="amount" type="number" step="0.01" className="w-full p-3 bg-slate-50 rounded-xl text-xl font-bold text-center" placeholder="0.00" required /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold" required /></div><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Deduct From</label><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none text-sm font-semibold" required><option value="">Select Bank</option>{ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></div></div><div onClick={() => setIsPaid(!isPaid)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${isPaid ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-500'}`}>{isPaid ? 'Marked as PAID' : 'Marked as UNPAID'}</span><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>{isPaid && <Icon name="Check" size={14} className="text-white" />}</div></div></>
-                            )}
-                            {activeModal === 'repair' && (
-                                <><input name="customer_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Customer Name" required autoFocus /><input name="phone_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Phone Model" required /><textarea name="fault" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium h-20 resize-none" placeholder="Fault / Issue"></textarea><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Price (Leave empty if Pending)</label><input name="amount" type="number" step="0.01" className="w-full p-3 bg-slate-50 rounded-xl text-xl font-bold" placeholder="0.00" /></div><div onClick={() => setIsPaid(!isPaid)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${isPaid ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-500'}`}>{isPaid ? 'Paid & Completed' : 'Pending Payment'}</span><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>{isPaid && <Icon name="Check" size={14} className="text-white" />}</div></div></>
-                            )}
-                            {(activeModal === 'withdraw' || activeModal === 'loan') && (
-                                <><input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight" placeholder="0.00" autoFocus required /><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required><option value="">{activeModal === 'loan' ? 'Select Provider' : 'Withdraw From'}</option>{(activeModal === 'loan' ? LOAN_ACCOUNTS : ACCOUNTS).map(a => <option key={a} value={a}>{a}</option>)}</select></>
-                            )}
-                            <button className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg text-lg hover:bg-black transition-transform active:scale-[0.98]">Confirm Action</button>
+                            {activeModal === 'deposit' && (<><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label><input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00" autoFocus required /></div><input name="reason" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Reason (e.g. Salary)" required /><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Deposit To</label><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required><option value="">Select Account</option>{ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></div></>)}
+                            {activeModal === 'withdraw' && (<><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label><input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight focus:ring-2 focus:ring-red-500 outline-none" placeholder="0.00" autoFocus required /></div><input name="reason" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Reason (e.g. Bills)" required /><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Withdraw From</label><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required><option value="">Select Account</option>{ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></div></>)}
+                            {activeModal === 'reload' && (<><input name="customer_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Customer Name / Number" required autoFocus /><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label><input name="amount" type="number" step="0.01" className="w-full p-3 bg-slate-50 rounded-xl text-xl font-bold text-center" placeholder="0.00" required /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold" required /></div><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Deduct From</label><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none text-sm font-semibold" required><option value="">Select Bank</option>{ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></div></div><div onClick={() => setIsPaid(!isPaid)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${isPaid ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-500'}`}>{isPaid ? 'Marked as PAID' : 'Marked as UNPAID'}</span><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>{isPaid && <Icon name="Check" size={14} className="text-white" />}</div></div></>)}
+                            {activeModal === 'repair' && (<><input name="customer_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Customer Name" required autoFocus /><input name="phone_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Phone Model" required /><textarea name="fault" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium h-20 resize-none" placeholder="Fault / Issue"></textarea><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Price (Leave empty if Pending)</label><input name="amount" type="number" step="0.01" className="w-full p-3 bg-slate-50 rounded-xl text-xl font-bold" placeholder="0.00" /></div><div onClick={() => setIsPaid(!isPaid)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${isPaid ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-500'}`}>{isPaid ? 'Paid & Completed' : 'Pending Payment'}</span><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>{isPaid && <Icon name="Check" size={14} className="text-white" />}</div></div></>)}
+                            {activeModal === 'loan' && (<><input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight" placeholder="0.00" autoFocus required /><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required><option value="">Select Provider</option>{LOAN_ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></>)}
+                            <button className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg text-lg hover:bg-black transition-transform active:scale-[0.98]">Authorize & Save</button>
                         </form>
                     </div>
                 </div>
             );
         };
 
-        const SecurityModal = ({ isOpen, onClose, onConfirm, title, loading }) => {
+        // --- UPDATED SECURITY MODAL (Auto Clear + Shake) ---
+        const SecurityModal = ({ isOpen, onClose, onConfirm, title, loading, triggerError }) => {
             const [pin, setPin] = useState('');
-            const [isScanning, setIsScanning] = useState(false);
-            useEffect(() => { if (isOpen) { setPin(''); setIsScanning(false); } }, [isOpen]);
-            const handleBiometric = () => { setIsScanning(true); setTimeout(() => { setIsScanning(false); alert("Verified!"); }, 1500); };
-            const handleNum = (n) => { if(pin.length < 6) setPin(p => p + n); };
+            const [shake, setShake] = useState(false);
+
+            // Auto Clear on Open
+            useEffect(() => { if (isOpen) { setPin(''); setShake(false); } }, [isOpen]);
+
+            // Handle Error Trigger from Parent (Shake & Clear)
+            useEffect(() => {
+                if (triggerError > 0) {
+                    setShake(true);
+                    setTimeout(() => {
+                        setPin(''); // Auto Clear
+                        setShake(false);
+                    }, 500); // 500ms delay for shake
+                }
+            }, [triggerError]);
+
+            // Keyboard Support
+            useEffect(() => {
+                if (!isOpen) return;
+                const handleKey = (e) => {
+                    if (loading) return;
+                    if (e.key >= '0' && e.key <= '9') { if (pin.length < 6) setPin(p => p + e.key); }
+                    if (e.key === 'Backspace') setPin(p => p.slice(0, -1));
+                    if (e.key === 'Enter' && pin.length === 6) onConfirm(pin);
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [isOpen, pin, loading]);
+
+            const handleNum = (n) => { if(pin.length < 6 && !loading) setPin(p => p + n); };
 
             if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-[90] bg-slate-900/90 backdrop-blur-sm flex items-end sm:items-center justify-center">
-                    <div className="bg-slate-100 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-fade-in-up">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-lg text-slate-800">{title}</h3>
-                            <button onClick={onClose}><Icon name="X" className="text-slate-400" /></button>
-                        </div>
+                    <div className={`bg-slate-100 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-fade-in-up ${shake ? 'animate-shake error-shake' : ''}`}>
+                        <div className="flex justify-between items-center mb-6"><h3 className="font-bold text-lg text-slate-800">{title}</h3><button onClick={onClose}><Icon name="X" className="text-slate-400" /></button></div>
                         <div className="flex flex-col items-center mb-6">
-                            {isScanning ? <div className="face-id-scanner mb-2 bg-white"><Icon name="User" size={32} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-300" /></div> : <button onClick={handleBiometric} className="mb-2 p-4 bg-white text-blue-600 rounded-2xl shadow-sm border border-slate-200"><Icon name="ScanFace" size={32} /></button>}
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Security Check</p>
+                            <div className="mb-2 p-4 bg-white text-blue-600 rounded-2xl shadow-sm border border-slate-200">
+                                {loading ? <Icon name="Loader2" className="animate-spin" size={32} /> : <Icon name="ScanFace" size={32} />}
+                            </div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{loading ? 'Verifying PIN...' : 'Authorize Transaction'}</p>
                         </div>
                         <div className="flex justify-center gap-3 mb-8">{[...Array(6)].map((_, i) => <div key={i} className={`pin-dot ${i < pin.length ? 'filled' : 'empty'}`}></div>)}</div>
-                        <div className="grid grid-cols-3 gap-3 mb-4">{[1,2,3,4,5,6,7,8,9].map(n => <button key={n} onClick={() => handleNum(n)} className="h-14 rounded-xl bg-white shadow-sm font-bold text-xl text-slate-700 active:scale-95 transition-transform">{n}</button>)}<div></div><button onClick={() => handleNum(0)} className="h-14 rounded-xl bg-white shadow-sm font-bold text-xl text-slate-700 active:scale-95">0</button><button onClick={() => setPin(p => p.slice(0,-1))} className="h-14 flex items-center justify-center text-slate-400"><Icon name="Delete" /></button></div>
-                        <button onClick={() => onConfirm(pin)} disabled={pin.length !== 6 || loading} className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg disabled:opacity-50 shadow-lg">{loading ? 'Verifying...' : 'Confirm'}</button>
+                        <div className="grid grid-cols-3 gap-3 mb-4">{[1,2,3,4,5,6,7,8,9].map(n => <button key={n} onClick={() => handleNum(n)} disabled={loading} className="h-14 rounded-xl bg-white shadow-sm font-bold text-xl text-slate-700 active:scale-95 transition-transform disabled:opacity-50">{n}</button>)}<div></div><button onClick={() => handleNum(0)} disabled={loading} className="h-14 rounded-xl bg-white shadow-sm font-bold text-xl text-slate-700 active:scale-95 disabled:opacity-50">0</button><button onClick={() => setPin(p => p.slice(0,-1))} disabled={loading} className="h-14 flex items-center justify-center text-slate-400"><Icon name="Delete" /></button></div>
+                        <button onClick={() => onConfirm(pin)} disabled={pin.length !== 6 || loading} className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg disabled:opacity-50 shadow-lg transition-all">{loading ? 'Verifying...' : 'Confirm'}</button>
                     </div>
                 </div>
             );
         };
 
-        // --- MAIN APP ---
         const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [transactions, setTransactions] = useState([]);
             const [initialLoading, setInitialLoading] = useState(true);
             const [isSyncing, setIsSyncing] = useState(false);
+            const [isVerifyingPin, setIsVerifyingPin] = useState(false);
+            const [pinErrorTrigger, setPinErrorTrigger] = useState(0); // Triggers shake in modal
             
             const [activeModal, setActiveModal] = useState(null);
             const [securityModal, setSecurityModal] = useState(false);
             const [pendingAction, setPendingAction] = useState(null);
             const [selectedAccount, setSelectedAccount] = useState(null);
+            const [filterType, setFilterType] = useState('all');
             const [refresh, setRefresh] = useState(0);
             const [toasts, setToasts] = useState([]);
             const scrollRef = useRef(null);
             const [isPaused, setIsPaused] = useState(false);
 
-            const addToast = (msg, type='success') => {
-                const id = Date.now();
-                setToasts(p => [...p, {id, msg, type}]);
-                setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3000);
-            };
+            const addToast = (msg, type='success') => { const id = Date.now(); setToasts(p => [...p, {id, msg, type}]); setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3000); };
 
             useEffect(() => {
+                if (!isLoggedIn) return;
                 const load = async () => {
                     if (initialLoading) setInitialLoading(true); else setIsSyncing(true);
-                    try {
-                        const res = await fetch(`${GAS_API_URL}?action=fetchData&userId=${USER_ID}`);
-                        const data = await res.json();
-                        setTransactions(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-                    } catch (e) { addToast("Sync Failed", "error"); } finally { setInitialLoading(false); setIsSyncing(false); }
+                    try { const res = await fetch(`${GAS_API_URL}?action=fetchData&userId=${USER_ID}`); const data = await res.json(); setTransactions(data.sort((a, b) => new Date(b.date) - new Date(a.date))); } catch (e) { addToast("Sync Failed", "error"); } finally { setInitialLoading(false); setIsSyncing(false); }
                 };
                 load();
-            }, [refresh]);
+            }, [refresh, isLoggedIn]);
 
-            useEffect(() => {
-                const el = scrollRef.current;
-                if (!el) return;
-                const interval = setInterval(() => {
-                    if (!isPaused && !selectedAccount) {
-                        if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) el.scrollTo({ left: 0, behavior: 'smooth' });
-                        else el.scrollBy({ left: 350, behavior: 'smooth' });
-                    }
-                }, 3000);
-                return () => clearInterval(interval);
-            }, [isPaused, selectedAccount]);
+            useEffect(() => { const el = scrollRef.current; if (!el) return; const interval = setInterval(() => { if (!isPaused && !selectedAccount) { if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) el.scrollTo({ left: 0, behavior: 'smooth' }); else el.scrollBy({ left: 350, behavior: 'smooth' }); } }, 3000); return () => clearInterval(interval); }, [isPaused, selectedAccount]);
 
             const handleBackgroundAction = async (payload, successMsg) => {
-                setActiveModal(null); setSecurityModal(false); setIsSyncing(true);
+                setIsVerifyingPin(true);
                 try {
                     const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
                     const data = await res.json();
-                    if (data.success) { setRefresh(r => r + 1); addToast(successMsg, "success"); } 
-                    else { addToast(data.message || "Action Failed", "error"); setIsSyncing(false); }
-                } catch (e) { addToast("Network Error", "error"); setIsSyncing(false); }
-            };
-
-            const handleFormSubmit = (data) => {
-                handleBackgroundAction({ 
-                    action: 'addTransaction', 
-                    userId: USER_ID, 
-                    data: { ...data, id: crypto.randomUUID(), date: data.date ? new Date(data.date).toISOString() : new Date().toISOString() } 
-                }, "Saved Successfully!");
-            };
-
-            const handleSecurityConfirm = (pin) => {
-                if (pendingAction?.type === 'update') {
-                    const t = pendingAction.transaction;
-                    const updates = { is_paid: true };
-                    if (t.type === 'repair') {
-                        const input = prompt("Final Price:", t.amount);
-                        if (input) { updates.amount = parseFloat(input); updates.price_status = 'Added'; }
+                    
+                    if (data.success) { 
+                        setSecurityModal(false);
+                        setPendingAction(null);
+                        setActiveModal(null);
+                        setRefresh(r => r + 1); 
+                        addToast(successMsg, "success"); 
+                    } else { 
+                        // Error (Wrong PIN) -> Trigger Shake & Clear in Modal
+                        setPinErrorTrigger(prev => prev + 1);
+                        addToast(data.message || "Incorrect PIN", "error"); 
                     }
-                    handleBackgroundAction({ action: 'updateStatus', userId: USER_ID, transactionId: t.id, updates, pin }, "Payment Confirmed!");
+                } catch (e) { 
+                    addToast("Network Error", "error"); 
+                } finally {
+                    setIsVerifyingPin(false);
                 }
             };
 
-            const initiatePayment = (t) => { setPendingAction({ type: 'update', transaction: t }); setSecurityModal(true); };
+            const handleModalSubmit = (data) => {
+                setPendingAction({ type: 'new_transaction', data: data });
+                setActiveModal(null); setSecurityModal(true);
+            };
+
+            const initiatePayment = (t) => { setPendingAction({ type: 'update_transaction', transaction: t }); setSecurityModal(true); };
+
+            const handleSecurityConfirm = (pin) => {
+                if (!pendingAction) return;
+                if (pendingAction.type === 'new_transaction') {
+                     handleBackgroundAction({ 
+                         action: 'addTransaction', 
+                         userId: USER_ID, 
+                         data: { ...pendingAction.data, id: crypto.randomUUID(), date: pendingAction.data.date ? new Date(pendingAction.data.date).toISOString() : new Date().toISOString() },
+                         pin: pin 
+                     }, "Transaction Successful!");
+                } else if (pendingAction.type === 'update_transaction') {
+                    const t = pendingAction.transaction;
+                    const updates = { is_paid: true };
+                    if (t.type === 'repair') { const input = prompt("Final Price:", t.amount); if (input) { updates.amount = parseFloat(input); updates.price_status = 'Added'; } }
+                    handleBackgroundAction({ 
+                        action: 'updateStatus', 
+                        userId: USER_ID, 
+                        transactionId: t.id, 
+                        updates, 
+                        pin: pin 
+                    }, "Payment Confirmed!");
+                }
+            };
 
             const { balances, stats } = useMemo(() => {
-                const bals = {}; ACCOUNTS.forEach(a => bals[a] = 0);
-                let inc = 0, exp = 0;
-                const now = new Date();
+                const bals = {}; ACCOUNTS.forEach(a => bals[a] = 0); let inc = 0, exp = 0; const now = new Date();
                 transactions.forEach(t => {
-                    const val = parseFloat(t.amount) || 0;
-                    const acc = t.bank_account?.replace(' Loan', '');
-                    if (acc && bals.hasOwnProperty(acc)) {
-                        if (t.type === 'deposit' || (t.type === 'repair' && t.is_paid)) bals[acc] += val;
-                        else if (['withdrawal', 'reload', 'loan_acquisition'].includes(t.type)) bals[acc] -= val;
-                    }
-                    if (new Date(t.date).getMonth() === now.getMonth()) {
-                        if (t.type === 'deposit' && t.reason !== 'Loan Funds Received') inc += val;
-                        else if (t.type === 'repair' && t.is_paid) inc += val;
-                        else if (['withdrawal', 'reload'].includes(t.type)) exp += val;
-                    }
+                    const val = parseFloat(t.amount) || 0; const acc = t.bank_account?.replace(' Loan', '');
+                    if (acc && bals.hasOwnProperty(acc)) { if (t.type === 'deposit' || (t.type === 'repair' && t.is_paid)) bals[acc] += val; else if (['withdrawal', 'reload', 'loan_acquisition'].includes(t.type)) bals[acc] -= val; }
+                    if (new Date(t.date).getMonth() === now.getMonth()) { if (t.type === 'deposit' && t.reason !== 'Loan Funds Received') inc += val; else if (t.type === 'repair' && t.is_paid) inc += val; else if (['withdrawal', 'reload'].includes(t.type)) exp += val; }
                 });
                 return { balances: bals, stats: { inc, exp, net: inc - exp } };
             }, [transactions]);
 
+            const filteredTransactions = useMemo(() => {
+                return transactions.filter(t => {
+                    const matchesAccount = !selectedAccount || t.bank_account?.includes(selectedAccount);
+                    const matchesType = filterType === 'all' || 
+                        (filterType === 'deposit' && t.type === 'deposit') ||
+                        (filterType === 'withdraw' && t.type === 'withdrawal') ||
+                        (filterType === 'reload' && t.type === 'reload') ||
+                        (filterType === 'repair' && t.type === 'repair') ||
+                        (filterType === 'loan' && t.type === 'loan_acquisition');
+                    return matchesAccount && matchesType;
+                });
+            }, [transactions, selectedAccount, filterType]);
+
+            if (!isLoggedIn) return <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />;
             if (initialLoading) return <FullPageLoader />;
 
             return (
                 <div className="min-h-screen pb-20 max-w-4xl mx-auto">
-                    <header className="glass-panel sticky top-0 z-40 px-6 py-4 flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-2"><div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white"><Icon name="Wallet" size={18}/></div>
-                            {/* >>>>>>>> 3. Main Header එකේ නම මෙතනින් වෙනස් කරන්න <<<<<<<< */}
-                            <h1 className="font-bold text-xl tracking-tight text-slate-800">Sanduwa<span className="text-blue-600">MoneyManager</span></h1>
-                        </div>
-                        <button onClick={() => setRefresh(r => r + 1)} className="p-2 bg-white rounded-full shadow-sm border"><Icon name="RefreshCw" size={18} /></button>
-                    </header>
+                    <header className="glass-panel sticky top-0 z-40 px-6 py-4 flex justify-between items-center mb-4"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white"><Icon name="Wallet" size={18}/></div>
+                    {/* 👉 CHANGE HERE: Main Title */}
+                    <h1 className="font-bold text-xl tracking-tight text-slate-800">Sanduwa<span className="text-blue-600">MoneyManager</span></h1></div><button onClick={() => setRefresh(r => r + 1)} className="p-2 bg-white rounded-full shadow-sm border"><Icon name="RefreshCw" size={18} /></button></header>
                     <main className="px-4 space-y-8">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"><div><p className="text-xs text-slate-400 font-medium mb-1">Monthly Income</p><p className="text-xl font-bold text-emerald-600">+{stats.inc.toLocaleString()}</p></div><div className="p-3 bg-emerald-50 rounded-full text-emerald-500"><Icon name="TrendingUp" size={20}/></div></div>
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"><div><p className="text-xs text-slate-400 font-medium mb-1">Monthly Expense</p><p className="text-xl font-bold text-red-600">-{stats.exp.toLocaleString()}</p></div><div className="p-3 bg-red-50 rounded-full text-red-500"><Icon name="TrendingDown" size={20}/></div></div>
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"><div><p className="text-xs text-slate-400 font-medium mb-1">Net Savings</p><p className="text-xl font-bold text-blue-600">{stats.net.toLocaleString()}</p></div><div className="p-3 bg-blue-50 rounded-full text-blue-500"><Icon name="PiggyBank" size={20}/></div></div>
                         </div>
-                        <div className="grid grid-cols-5 gap-2 sm:gap-4">
-                            {[{id:'deposit',label:'Deposit',c:'bg-emerald-500',i:'Plus'},{id:'withdraw',label:'Withdraw',c:'bg-red-500',i:'Minus'},{id:'reload',label:'Reload',c:'bg-blue-500',i:'Smartphone'},{id:'repair',label:'Repair',c:'bg-amber-500',i:'Wrench'},{id:'loan',label:'Loan',c:'bg-purple-600',i:'History'}].map(b => (
-                                <button key={b.id} onClick={() => setActiveModal(b.id)} className={`${b.c} text-white rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-md hover:opacity-90 active:scale-95 transition-all`}><Icon name={b.i} size={20} strokeWidth={3} /><span className="text-[10px] sm:text-xs font-bold">{b.label}</span></button>
-                            ))}
-                        </div>
+                        <div className="grid grid-cols-5 gap-2 sm:gap-4">{[{id:'deposit',label:'Deposit',c:'bg-emerald-500',i:'Plus'},{id:'withdraw',label:'Withdraw',c:'bg-red-500',i:'Minus'},{id:'reload',label:'Reload',c:'bg-blue-500',i:'Smartphone'},{id:'repair',label:'Repair',c:'bg-amber-500',i:'Wrench'},{id:'loan',label:'Loan',c:'bg-purple-600',i:'History'}].map(b => (<button key={b.id} onClick={() => setActiveModal(b.id)} className={`${b.c} text-white rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-md hover:opacity-90 active:scale-95 transition-all`}><Icon name={b.i} size={20} strokeWidth={3} /><span className="text-[10px] sm:text-xs font-bold">{b.label}</span></button>))}</div>
                         <div className="relative -mx-4 px-4 overflow-hidden py-6"><div ref={scrollRef} className="flex overflow-x-auto gap-5 px-2 snap-x hide-scrollbar pb-6" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onTouchStart={() => setIsPaused(true)} onTouchEnd={() => setIsPaused(false)}>{ACCOUNTS.map(acc => <BalanceCard key={acc} account={acc} balance={balances[acc]} isActive={selectedAccount === acc} onClick={() => setSelectedAccount(selectedAccount === acc ? null : acc)} />)}</div></div>
                         <div className="bg-white rounded-3xl p-6 shadow-sm min-h-[400px]">
-                            <div className="flex justify-between items-center mb-4"><h2 className="font-bold text-slate-800 text-lg">Recent Activity</h2>{selectedAccount && <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">{selectedAccount}</span>}</div>
-                            {transactions.length === 0 ? <div className="text-center py-10 text-slate-300">No transactions found</div> : transactions.filter(t => !selectedAccount || t.bank_account?.includes(selectedAccount)).slice(0, 20).map(t => <TransactionItem key={t.id} t={t} onPay={initiatePayment} />)}
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="font-bold text-slate-800 text-lg">Recent Activity</h2>
+                                <div className="flex gap-2">
+                                    <div onClick={() => setFilterType(filterType === 'deposit' ? 'all' : 'deposit')} className={`filter-dot bg-emerald-500 ${filterType === 'deposit' ? 'active' : ''}`} title="Deposit"></div>
+                                    <div onClick={() => setFilterType(filterType === 'withdraw' ? 'all' : 'withdraw')} className={`filter-dot bg-red-500 ${filterType === 'withdraw' ? 'active' : ''}`} title="Withdraw"></div>
+                                    <div onClick={() => setFilterType(filterType === 'reload' ? 'all' : 'reload')} className={`filter-dot bg-blue-500 ${filterType === 'reload' ? 'active' : ''}`} title="Reload"></div>
+                                    <div onClick={() => setFilterType(filterType === 'repair' ? 'all' : 'repair')} className={`filter-dot bg-amber-500 ${filterType === 'repair' ? 'active' : ''}`} title="Repair"></div>
+                                    <div onClick={() => setFilterType(filterType === 'loan' ? 'all' : 'loan')} className={`filter-dot bg-purple-500 ${filterType === 'loan' ? 'active' : ''}`} title="Loan"></div>
+                                    {filterType !== 'all' && <div onClick={() => setFilterType('all')} className="text-[10px] text-slate-400 cursor-pointer hover:text-slate-600 self-center">Clear</div>}
+                                </div>
+                            </div>
+                            {selectedAccount && <div className="mb-2"><span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">{selectedAccount}</span></div>}
+                            {filteredTransactions.length === 0 ? <div className="text-center py-10 text-slate-300">No transactions found</div> : filteredTransactions.slice(0, 20).map(t => <TransactionItem key={t.id} t={t} onPay={initiatePayment} />)}
                         </div>
                     </main>
                     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-xs px-4 flex flex-col gap-2">{toasts.map(t => <div key={t.id} className={`flex items-center p-3 rounded-xl shadow-xl backdrop-blur-md text-white animate-fade-in-up ${t.type === 'success' ? 'bg-emerald-600/95' : 'bg-red-600/95'}`}><Icon name={t.type === 'success' ? 'CheckCircle2' : 'AlertCircle'} className="mr-2 shrink-0" size={18} /><span className="text-sm font-semibold">{t.msg}</span></div>)}</div>
                     <SyncIndicator isSyncing={isSyncing} />
                     <footer className="text-center py-8 text-slate-400 space-y-1"><p className="text-xs font-bold">© 2025 DesignVerse by Sandusha Avishkha.</p><p className="text-[10px] font-semibold uppercase tracking-widest opacity-70">Crafted with passion in Minuwangoda, Sri Lanka</p></footer>
-                    <ActionModal activeModal={activeModal} onClose={() => setActiveModal(null)} onSubmit={handleFormSubmit} />
-                    <SecurityModal isOpen={securityModal} onClose={() => setSecurityModal(false)} onConfirm={handleSecurityConfirm} title="Authorize" loading={isSyncing} />
+                    
+                    <ActionModal activeModal={activeModal} onClose={() => setActiveModal(null)} onSubmit={handleModalSubmit} />
+                    
+                    <SecurityModal 
+                        isOpen={securityModal} 
+                        onClose={() => { if(!isVerifyingPin) setSecurityModal(false); }} 
+                        onConfirm={handleSecurityConfirm} 
+                        title={pendingAction?.type === 'new_transaction' ? 'Authorize Transaction' : 'Authorize Update'} 
+                        loading={isVerifyingPin} 
+                        triggerError={pinErrorTrigger}
+                    />
                 </div>
             );
         };
