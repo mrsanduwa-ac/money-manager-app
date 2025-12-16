@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 👉 CHANGE HERE: Browser Title -->
     <title>Sanduwa Money Manager</title>
     
-    <!-- Tailwind CSS & Config -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -41,7 +39,6 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- React & Libraries -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
@@ -50,8 +47,7 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* ❌ REMOVED: .hide-scrollbar { display: none; } */
         .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         .card-shadow { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
         
@@ -237,6 +233,7 @@
                 if(name.includes('Peoples')) return 'linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%)';
                 if(name.includes('Dialog')) return 'linear-gradient(135deg, #b71c1c 0%, #880e4f 100%)';
                 if(name.includes('Solo')) return 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)';
+                if(name.includes('Wallet')) return 'linear-gradient(135deg, #4b5563 0%, #1f2937 100%)';
                 return 'linear-gradient(135deg, #263238 0%, #37474f 100%)';
             };
             return (
@@ -253,19 +250,55 @@
             const isPaid = t.is_paid === true || t.is_paid === 'true';
             let icon = 'Banknote', color = 'text-slate-600', bg = 'bg-slate-100', sign = '';
             
-            const hidePayButton = t.type === 'deposit' || t.type === 'withdrawal' || t.type === 'loan_acquisition';
+            const hidePayButton = t.type === 'deposit' || t.type === 'withdrawal' || t.type === 'loan_acquisition' || t.type === 'transfer';
             
             if (t.type === 'deposit') { icon = 'ArrowDownLeft'; color = 'text-emerald-600'; bg = 'bg-emerald-100'; sign = '+'; }
             else if (t.type === 'withdrawal') { icon = 'ArrowUpRight'; color = 'text-rose-600'; bg = 'bg-rose-100'; sign = '-'; }
             else if (t.type === 'reload') { icon = 'Smartphone'; color = 'text-blue-600'; bg = 'bg-blue-100'; sign = '-'; }
             else if (t.type === 'repair') { icon = 'Wrench'; color = 'text-amber-600'; bg = 'bg-amber-100'; sign = t.price_status === 'Added' ? '+' : ''; }
             else if (t.type === 'loan_acquisition') { icon = 'History'; color = 'text-purple-600'; bg = 'bg-purple-100'; sign = '-'; }
+            // New Transfer Type
+            else if (t.type === 'transfer') { icon = 'ArrowLeftRight'; color = 'text-indigo-600'; bg = 'bg-indigo-100'; sign = ''; }
+
+            const accountInfo = t.bank_account ? t.bank_account.replace(' Bank','') : '';
+
+            // --- REASON/TITLE LOGIC ---
+            let title = t.customer_name || t.reason;
+            if (t.type === 'transfer' && t.reason) {
+                // If it's a transfer, use the structured reason we created: "Transfer from X to Y"
+                title = t.reason;
+            } else if (!title) {
+                // Fallback to type if no other title exists
+                title = t.type;
+            }
+            // --------------------------
+
+            // Transfer description logic - Corrected to render React elements
+            let descriptionElement;
+            if (t.type === 'transfer') {
+                const parts = t.bank_account.split(' to ').map(a => a.trim().replace(' Bank',''));
+                descriptionElement = (
+                    <span className="text-xs text-slate-500 font-medium mt-0.5">
+                        {new Date(t.date).toLocaleDateString()} • {parts[0] || 'Source'} → {parts[1] || 'Destination'}
+                    </span>
+                );
+            } else {
+                descriptionElement = (
+                    <span className="text-xs text-slate-500 font-medium mt-0.5">
+                        {new Date(t.date).toLocaleDateString()} • {accountInfo} • <span className="uppercase text-[10px]">{t.type}</span>
+                    </span>
+                );
+            }
 
             return (
                 <div onClick={() => !isPaid && !hidePayButton && onPay(t)} className={`flex items-center justify-between p-4 rounded-xl mb-2 transition-all ${!isPaid && !hidePayButton ? 'bg-white hover:bg-slate-50 cursor-pointer border border-slate-100' : 'bg-transparent border-b border-slate-50'}`}>
                     <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-xl ${bg} ${color}`}><Icon name={icon} size={20} /></div>
-                        <div><p className="font-bold text-slate-800 text-sm">{t.customer_name || t.reason || t.type}</p><p className="text-xs text-slate-500 font-medium mt-0.5">{new Date(t.date).toLocaleDateString()} • {t.bank_account?.replace(' Bank','')} • <span className="uppercase text-[10px]">{t.type}</span></p></div>
+                        <div>
+                            {/* Updated to use the determined title */}
+                            <p className="font-bold text-slate-800 text-sm">{title}</p>
+                            {descriptionElement}
+                        </div>
                     </div>
                     <div className="text-right"><p className={`font-bold font-mono ${color} text-base`}>{sign}{parseFloat(t.amount).toLocaleString()}</p>{!isPaid && !hidePayButton && <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">PAY NOW</span>}</div>
                 </div>
@@ -278,6 +311,10 @@
             const [date, setDate] = useState(today);
             const [isPaid, setIsPaid] = useState(false);
             useEffect(() => { setDate(today); setIsPaid(false); }, [activeModal]);
+
+            const ACCOUNTS_WITHOUT_WALLET = ACCOUNTS.filter(a => a !== 'Wallet');
+            const ACCOUNTS_WITH_WALLET_AT_TOP = ['Wallet', ...ACCOUNTS.filter(a => a !== 'Wallet')];
+
             const handleSubmit = (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
@@ -287,9 +324,20 @@
                 if (activeModal === 'reload') { data.type = 'reload'; data.date = date; data.is_paid = isPaid; }
                 if (activeModal === 'repair') { data.type = 'repair'; data.is_paid = isPaid; data.price_status = data.amount ? 'Added' : 'Pending'; }
                 if (activeModal === 'loan') { data.type = 'loan_acquisition'; data.is_paid = true; }
+                // Transfer Logic
+                if (activeModal === 'transfer') { 
+                    data.type = 'transfer'; 
+                    // Ensure reason is set for transfers
+                    if (!data.reason) {
+                       data.reason = `Transfer from ${data.from_account.replace(' Bank', '').replace(' Loan', '')} to ${data.to_account.replace(' Bank', '').replace(' Loan', '')}`;
+                    }
+                    data.bank_account = `${data.from_account} to ${data.to_account}`; // Store both accounts
+                    delete data.from_account;
+                    delete data.to_account;
+                }
                 onSubmit(data);
             };
-            const titles = { deposit: 'Deposit Funds', withdraw: 'Withdraw Cash', reload: 'Mobile Reload', repair: 'New Repair Job', loan: 'Get Loan' };
+            const titles = { deposit: 'Deposit Funds', withdraw: 'Withdraw Cash', reload: 'Mobile Reload', repair: 'New Repair Job', loan: 'Get Loan', transfer: 'Transfer Funds' };
 
             return (
                 <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center">
@@ -301,6 +349,30 @@
                             {activeModal === 'reload' && (<><input name="customer_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Customer Name / Number" required autoFocus /><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label><input name="amount" type="number" step="0.01" className="w-full p-3 bg-slate-50 rounded-xl text-xl font-bold text-center" placeholder="0.00" required /></div><div className="grid grid-cols-2 gap-3"><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold" required /></div><div><label className="text-xs font-bold text-slate-400 uppercase ml-1">Deduct From</label><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none text-sm font-semibold" required><option value="">Select Bank</option>{ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></div></div><div onClick={() => setIsPaid(!isPaid)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${isPaid ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-500'}`}>{isPaid ? 'Marked as PAID' : 'Marked as UNPAID'}</span><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>{isPaid && <Icon name="Check" size={14} className="text-white" />}</div></div></>)}
                             {activeModal === 'repair' && (<><input name="customer_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Customer Name" required autoFocus /><input name="phone_name" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Phone Model" required /><textarea name="fault" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium h-20 resize-none" placeholder="Fault / Issue"></textarea><div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Price (Leave empty if Pending)</label><input name="amount" type="number" step="0.01" className="w-full p-3 bg-slate-50 rounded-xl text-xl font-bold" placeholder="0.00" /></div><div onClick={() => setIsPaid(!isPaid)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${isPaid ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}><span className={`font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-500'}`}>{isPaid ? 'Paid & Completed' : 'Pending Payment'}</span><div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isPaid ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>{isPaid && <Icon name="Check" size={14} className="text-white" />}</div></div></>)}
                             {activeModal === 'loan' && (<><input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight" placeholder="0.00" autoFocus required /><select name="bank_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required><option value="">Select Provider</option>{LOAN_ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}</select></>)}
+                            
+                            {/* NEW TRANSFER MODAL */}
+                            {activeModal === 'transfer' && (<>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label>
+                                    <input name="amount" type="number" step="0.01" className="w-full px-4 py-4 bg-slate-50 rounded-xl text-3xl font-bold text-center tracking-tight focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00" autoFocus required />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">From Account (Source)</label>
+                                    <select name="from_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required>
+                                        <option value="">Select Source Account</option>
+                                        {ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">To Account (Destination)</label>
+                                    <select name="to_account" className="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none font-semibold" required>
+                                        <option value="">Select Destination Account</option>
+                                        {ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}
+                                    </select>
+                                </div>
+                                <input name="reason" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium" placeholder="Reason (e.g. Wallet to Bank)" />
+                            </>)}
+
                             <button className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg text-lg hover:bg-black transition-transform active:scale-[0.98]">Authorize & Save</button>
                         </form>
                     </div>
@@ -390,7 +462,21 @@
                 load();
             }, [refresh, isLoggedIn]);
 
-            useEffect(() => { const el = scrollRef.current; if (!el) return; const interval = setInterval(() => { if (!isPaused && !selectedAccount) { if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) el.scrollTo({ left: 0, behavior: 'smooth' }); else el.scrollBy({ left: 350, behavior: 'smooth' }); } }, 3000); return () => clearInterval(interval); }, [isPaused, selectedAccount]);
+            // Auto-Scroll Logic (Kept as requested)
+            useEffect(() => { 
+                const el = scrollRef.current; 
+                if (!el) return; 
+                const interval = setInterval(() => { 
+                    if (!isPaused && !selectedAccount) { 
+                        // Check if we are near the end, then reset to start
+                        if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) 
+                            el.scrollTo({ left: 0, behavior: 'smooth' }); 
+                        else 
+                            el.scrollBy({ left: 350, behavior: 'smooth' }); 
+                    } 
+                }, 3000); 
+                return () => clearInterval(interval); 
+            }, [isPaused, selectedAccount]);
 
             const handleBackgroundAction = async (payload, successMsg) => {
                 setIsVerifyingPin(true);
@@ -449,22 +535,52 @@
             const { balances, stats } = useMemo(() => {
                 const bals = {}; ACCOUNTS.forEach(a => bals[a] = 0); let inc = 0, exp = 0; const now = new Date();
                 transactions.forEach(t => {
-                    const val = parseFloat(t.amount) || 0; const acc = t.bank_account?.replace(' Loan', '');
-                    if (acc && bals.hasOwnProperty(acc)) { if (t.type === 'deposit' || (t.type === 'repair' && t.is_paid)) bals[acc] += val; else if (['withdrawal', 'reload', 'loan_acquisition'].includes(t.type)) bals[acc] -= val; }
-                    if (new Date(t.date).getMonth() === now.getMonth()) { if (t.type === 'deposit' && t.reason !== 'Loan Funds Received') inc += val; else if (t.type === 'repair' && t.is_paid) inc += val; else if (['withdrawal', 'reload'].includes(t.type)) exp += val; }
+                    const val = parseFloat(t.amount) || 0; 
+                    const acc = t.bank_account?.replace(' Loan', '');
+
+                    if (t.type === 'transfer' && t.bank_account) {
+                        // Handle Transfer: Debit from source, Credit to destination
+                        const [fromAcc, toAcc] = t.bank_account.split(' to ').map(a => a.trim());
+                        if (bals.hasOwnProperty(fromAcc)) bals[fromAcc] -= val;
+                        if (bals.hasOwnProperty(toAcc)) bals[toAcc] += val;
+                    } 
+                    else if (acc && bals.hasOwnProperty(acc)) { 
+                        // Handle other types
+                        if (t.type === 'deposit' || (t.type === 'repair' && t.is_paid)) bals[acc] += val; 
+                        else if (['withdrawal', 'reload', 'loan_acquisition'].includes(t.type)) bals[acc] -= val; 
+                    }
+
+                    // Monthly Stats calculation (Transfers are neutral, so ignore here)
+                    if (new Date(t.date).getMonth() === now.getMonth()) { 
+                        if (t.type === 'deposit' && t.reason !== 'Loan Funds Received') inc += val; 
+                        else if (t.type === 'repair' && t.is_paid) inc += val; 
+                        else if (['withdrawal', 'reload'].includes(t.type)) exp += val; 
+                    }
                 });
                 return { balances: bals, stats: { inc, exp, net: inc - exp } };
             }, [transactions]);
 
             const filteredTransactions = useMemo(() => {
                 return transactions.filter(t => {
-                    const matchesAccount = !selectedAccount || t.bank_account?.includes(selectedAccount);
+                    let matchesAccount = !selectedAccount;
+
+                    if (selectedAccount) {
+                        if (t.type === 'transfer' && t.bank_account) {
+                            // Check if the selected account is either the source or destination
+                            matchesAccount = t.bank_account.includes(selectedAccount);
+                        } else {
+                            // Check single account transactions
+                            matchesAccount = t.bank_account?.includes(selectedAccount);
+                        }
+                    }
+                    
                     const matchesType = filterType === 'all' || 
                         (filterType === 'deposit' && t.type === 'deposit') ||
                         (filterType === 'withdraw' && t.type === 'withdrawal') ||
                         (filterType === 'reload' && t.type === 'reload') ||
                         (filterType === 'repair' && t.type === 'repair') ||
-                        (filterType === 'loan' && t.type === 'loan_acquisition');
+                        (filterType === 'loan' && t.type === 'loan_acquisition') ||
+                        (filterType === 'transfer' && t.type === 'transfer'); // New filter type
                     return matchesAccount && matchesType;
                 });
             }, [transactions, selectedAccount, filterType]);
@@ -483,14 +599,29 @@
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"><div><p className="text-xs text-slate-400 font-medium mb-1">Monthly Expense</p><p className="text-xl font-bold text-red-600">-{stats.exp.toLocaleString()}</p></div><div className="p-3 bg-red-50 rounded-full text-red-500"><Icon name="TrendingDown" size={20}/></div></div>
                             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"><div><p className="text-xs text-slate-400 font-medium mb-1">Net Savings</p><p className="text-xl font-bold text-blue-600">{stats.net.toLocaleString()}</p></div><div className="p-3 bg-blue-50 rounded-full text-blue-500"><Icon name="PiggyBank" size={20}/></div></div>
                         </div>
-                        <div className="grid grid-cols-5 gap-2 sm:gap-4">{[{id:'deposit',label:'Deposit',c:'bg-emerald-500',i:'Plus'},{id:'withdraw',label:'Withdraw',c:'bg-red-500',i:'Minus'},{id:'reload',label:'Reload',c:'bg-blue-500',i:'Smartphone'},{id:'repair',label:'Repair',c:'bg-amber-500',i:'Wrench'},{id:'loan',label:'Loan',c:'bg-purple-600',i:'History'}].map(b => (<button key={b.id} onClick={() => setActiveModal(b.id)} className={`${b.c} text-white rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-md hover:opacity-90 active:scale-95 transition-all`}><Icon name={b.i} size={20} strokeWidth={3} /><span className="text-[10px] sm:text-xs font-bold">{b.label}</span></button>))}</div>
-                        <div className="relative -mx-4 px-4 overflow-hidden py-6"><div ref={scrollRef} className="flex overflow-x-auto gap-5 px-2 snap-x hide-scrollbar pb-6" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onTouchStart={() => setIsPaused(true)} onTouchEnd={() => setIsPaused(false)}>{ACCOUNTS.map(acc => <BalanceCard key={acc} account={acc} balance={balances[acc]} isActive={selectedAccount === acc} onClick={() => setSelectedAccount(selectedAccount === acc ? null : acc)} />)}</div></div>
+                        {/* Action Buttons: Includes Transfer */}
+                        <div className="grid grid-cols-6 gap-2 sm:gap-4">{[{id:'deposit',label:'Deposit',c:'bg-emerald-500',i:'Plus'},{id:'withdraw',label:'Withdraw',c:'bg-red-500',i:'Minus'},{id:'transfer',label:'Transfer',c:'bg-indigo-500',i:'ArrowLeftRight'},{id:'reload',label:'Reload',c:'bg-blue-500',i:'Smartphone'},{id:'repair',label:'Repair',c:'bg-amber-500',i:'Wrench'},{id:'loan',label:'Loan',c:'bg-purple-600',i:'History'}].map(b => (<button key={b.id} onClick={() => setActiveModal(b.id)} className={`${b.c} text-white rounded-xl p-3 flex flex-col items-center justify-center gap-1 shadow-md hover:opacity-90 active:scale-95 transition-all`}><Icon name={b.i} size={20} strokeWidth={3} /><span className="text-[10px] sm:text-xs font-bold">{b.label}</span></button>))}</div>
+                        
+                        {/* Balance Cards - Scroll Bar is now visible */}
+                        <div className="relative -mx-4 px-4 overflow-hidden py-6">
+                            <div ref={scrollRef} 
+                                className="flex overflow-x-auto gap-5 px-2 snap-x pb-6" 
+                                onMouseEnter={() => setIsPaused(true)} 
+                                onMouseLeave={() => setIsPaused(false)} 
+                                onTouchStart={() => setIsPaused(true)} 
+                                onTouchEnd={() => setIsPaused(false)}>
+                                {ACCOUNTS.map(acc => <BalanceCard key={acc} account={acc} balance={balances[acc]} isActive={selectedAccount === acc} onClick={() => setSelectedAccount(selectedAccount === acc ? null : acc)} />)}
+                            </div>
+                        </div>
+                        
                         <div className="bg-white rounded-3xl p-6 shadow-sm min-h-[400px]">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="font-bold text-slate-800 text-lg">Recent Activity</h2>
+                                {/* Filter Dots: Includes Transfer (Indigo) */}
                                 <div className="flex gap-2">
                                     <div onClick={() => setFilterType(filterType === 'deposit' ? 'all' : 'deposit')} className={`filter-dot bg-emerald-500 ${filterType === 'deposit' ? 'active' : ''}`} title="Deposit"></div>
                                     <div onClick={() => setFilterType(filterType === 'withdraw' ? 'all' : 'withdraw')} className={`filter-dot bg-red-500 ${filterType === 'withdraw' ? 'active' : ''}`} title="Withdraw"></div>
+                                    <div onClick={() => setFilterType(filterType === 'transfer' ? 'all' : 'transfer')} className={`filter-dot bg-indigo-500 ${filterType === 'transfer' ? 'active' : ''}`} title="Transfer"></div>
                                     <div onClick={() => setFilterType(filterType === 'reload' ? 'all' : 'reload')} className={`filter-dot bg-blue-500 ${filterType === 'reload' ? 'active' : ''}`} title="Reload"></div>
                                     <div onClick={() => setFilterType(filterType === 'repair' ? 'all' : 'repair')} className={`filter-dot bg-amber-500 ${filterType === 'repair' ? 'active' : ''}`} title="Repair"></div>
                                     <div onClick={() => setFilterType(filterType === 'loan' ? 'all' : 'loan')} className={`filter-dot bg-purple-500 ${filterType === 'loan' ? 'active' : ''}`} title="Loan"></div>
