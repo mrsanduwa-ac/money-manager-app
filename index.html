@@ -322,7 +322,17 @@
                 if (activeModal === 'deposit') data.type = 'deposit';
                 if (activeModal === 'withdraw') data.type = 'withdrawal';
                 if (activeModal === 'reload') { data.type = 'reload'; data.date = date; data.is_paid = isPaid; }
-                if (activeModal === 'repair') { data.type = 'repair'; data.is_paid = isPaid; data.price_status = data.amount ? 'Added' : 'Pending'; }
+                
+                // >>>>>>> MODIFIED SECTION: REPAIR TO WALLET <<<<<<<
+                if (activeModal === 'repair') { 
+                    data.type = 'repair'; 
+                    data.is_paid = isPaid; 
+                    data.price_status = data.amount ? 'Added' : 'Pending'; 
+                    // Force account to Wallet
+                    data.bank_account = 'Wallet'; 
+                }
+                // >>>>>>> END MODIFIED SECTION <<<<<<<
+
                 if (activeModal === 'loan') { data.type = 'loan_acquisition'; data.is_paid = true; }
                 // Transfer Logic
                 if (activeModal === 'transfer') { 
@@ -521,7 +531,19 @@
                 } else if (pendingAction.type === 'update_transaction') {
                     const t = pendingAction.transaction;
                     const updates = { is_paid: true };
-                    if (t.type === 'repair') { const input = prompt("Final Price:", t.amount); if (input) { updates.amount = parseFloat(input); updates.price_status = 'Added'; } }
+                    
+                    // >>>>>>> MODIFIED SECTION: REPAIR TO WALLET <<<<<<<
+                    if (t.type === 'repair') { 
+                        const input = prompt("Final Price:", t.amount); 
+                        if (input) { 
+                            updates.amount = parseFloat(input); 
+                            updates.price_status = 'Added'; 
+                        }
+                        // Force update to Wallet
+                        updates.bank_account = 'Wallet';
+                    }
+                    // >>>>>>> END MODIFIED SECTION <<<<<<<
+
                     handleBackgroundAction({ 
                         action: 'updateStatus', 
                         userId: USER_ID, 
